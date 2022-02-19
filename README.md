@@ -7,7 +7,7 @@ Then Use the following commands either in VScode or command prompt
 git clone https://github.com/Scott-778/pancakeswap-trailing-stop-loss-bot.git
 ```
 ```
-cd pancakeswap-trailing-stop-loss-bott
+cd pancakeswap-trailing-stop-loss-bot
 ```
 ```
 npm install
