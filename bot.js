@@ -1,3 +1,10 @@
+/**
+ *
+ * Pancakeswap trailing stop loss bot. 
+ * 
+ *
+ * */
+
 const ethers = require('ethers');
 const input = require("input");
 require('dotenv').config();
@@ -55,6 +62,7 @@ async function buy() {
 
 
 }
+
 /**
  * 
  * Approve tokens
@@ -95,7 +103,6 @@ function setStopLossTrailing(token, stopLossTrailing) {
     token.trailingStopLossPercent += token.initialTrailingStopLossPercent;
     token.stopLoss = stopLossTrailing;
 }
-
 async function checkForProfit(token) {
     var sellAttempts = 0;
     await setStopLoss(token);
@@ -180,6 +187,12 @@ async function sell(tokenObj, isProfit) {
     } catch (e) {
     }
 }
+
+/**
+ * 
+ * Main
+ * 
+ * */
 (async () => {
     const address = await input.text("Enter Contract Address to buy");
     const investmentAmount = await input.text("Enter Investment Amount in BNB");
@@ -221,5 +234,4 @@ async function sell(tokenObj, isProfit) {
             process.exit();
         }
     });
-
 })();
