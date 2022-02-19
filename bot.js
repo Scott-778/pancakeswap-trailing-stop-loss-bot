@@ -223,7 +223,7 @@ async function sell(tokenObj, isProfit) {
                     checkProfit: function () { checkForProfit(this); },
                     percentOfTokensToSellProfit: percentOfTokensToSellProfit,
                     percentOfTokensToSellLoss: percentOfTokensToSellLoss,
-                    initialTrailingStopLossPercent: 0,
+                    initialTrailingStopLossPercent: trailingStopLossPercent,
                     trailingStopLossPercent: trailingStopLossPercent,
                     stopLoss: 0,
                     intitialValue: 0
