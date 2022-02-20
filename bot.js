@@ -38,7 +38,7 @@ var buyCount = 0;
 const buyContract = new ethers.Contract(addresses.buyContract, tokenAbi, account);
 const myGasPriceForApproval = ethers.utils.parseUnits('6', 'gwei');
 const myGasLimit = 1500000;
-
+const numberOfTokensToBuy = 1;
 /**
  * 
  * Buy tokens
@@ -117,7 +117,7 @@ async function checkForProfit(token) {
         console.log(ethers.utils.formatUnits(stopLossTrailing));
         if (currentValue.gt(stopLossTrailing) && token.trailingStopLossPercent > 0) {
             setStopLossTrailing(token, stopLossTrailing);
-            console.log(true, token.trailingStopLossPercent);
+            //console.log(true, token.trailingStopLossPercent);
         }
         let timeStamp = new Date().toLocaleString();
         const enc = (s) => new TextEncoder().encode(s);
