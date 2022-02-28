@@ -39,6 +39,7 @@ const buyContract = new ethers.Contract(addresses.buyContract, tokenAbi, account
 const myGasPriceForApproval = ethers.utils.parseUnits('6', 'gwei');
 const myGasLimit = 1500000;
 const numberOfTokensToBuy = 1;
+const version = 'v1.0';
 /**
  * 
  * Buy tokens
@@ -84,6 +85,7 @@ async function approve() {
 
 }
 
+
 /**
  * 
  * Check for profit
@@ -95,33 +97,39 @@ async function getCurrentValue(token) {
 	let currentValue = amount[1];
 	return currentValue;
 }
-async function setStopLoss(token) {
+async function setInitialStopLoss(token) {
 	token.intitialValue = await getCurrentValue(token);
-	token.stopLoss = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits(await getCurrentValue(token))) - parseFloat(ethers.utils.formatUnits(await getCurrentValue(token))) * (token.stopLossPercent / 100)).toFixed(18).toString());
-}
-function setStopLossTrailing(token, stopLossTrailing) {
-	token.trailingStopLossPercent += token.initialTrailingStopLossPercent;
-	token.stopLoss = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits(token.intitialValue)) * (token.trailingStopLossPercent / 100 - token.tokenSellTax /100) + parseFloat(ethers.utils.formatUnits(token.intitialValue))).toFixed(18).toString());;
+	token.newValue = token.intitialValue;
+	token.stopLoss = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits( token.intitialValue)) - parseFloat(ethers.utils.formatUnits( token.intitialValue)) * (token.stopLossPercent / 100)).toFixed(18).toString());
 }
 
+async function setNewStopLoss(token) {
+	token.newValue = token.currentValue;
+	// new stop loss equals old stop loss * trailing stop loss percent + old stop loss 
+	token.stopLoss = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits(token.stopLoss)) * (token.trailingStopLossPercent / 100 ) + parseFloat(ethers.utils.formatUnits(token.stopLoss))).toFixed(18).toString());;
+}
 async function checkForProfit(token) {
 	var sellAttempts = 0;
-	await setStopLoss(token);
+	await setInitialStopLoss(token);
 	token.contract.on("Transfer", async (from, to, value, event) => {
 		const tokenName = await token.contract.name();
 		let currentValue = await getCurrentValue(token);
+		token.currentValue = currentValue;
 		const takeProfit = (parseFloat(ethers.utils.formatUnits(token.intitialValue)) * (token.profitPercent + token.tokenSellTax) / 100 + parseFloat(ethers.utils.formatUnits(token.intitialValue))).toFixed(18).toString();
 		const profitDesired = ethers.utils.parseUnits(takeProfit);
-		let stopLossTrailing = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits(token.intitialValue)) * (token.trailingStopLossPercent / 100 + token.tokenSellTax /100) + parseFloat(ethers.utils.formatUnits(token.intitialValue))).toFixed(18).toString());
+		let targetValueToSetNewStopLoss = ethers.utils.parseUnits((parseFloat(ethers.utils.formatUnits(token.newValue)) * (token.trailingStopLossPercent / 100 + token.tokenSellTax / 100) + parseFloat(ethers.utils.formatUnits(token.newValue))).toFixed(18).toString());
+		console.log(ethers.utils.formatUnits(targetValueToSetNewStopLoss));
 		let stopLoss = token.stopLoss;
-		if (currentValue.gt(stopLossTrailing) && token.trailingStopLossPercent > 0) {
-			setStopLossTrailing(token, stopLossTrailing);
 
+		// if current value is greater than targetValue, set a new stop loss
+		if (currentValue.gt(targetValueToSetNewStopLoss) && token.trailingStopLossPercent > 0) {
+			setNewStopLoss(token);
+			console.log("Setting new stop loss")
 		}
 		let timeStamp = new Date().toLocaleString();
 		const enc = (s) => new TextEncoder().encode(s);
 		//process.stdout.write(enc(`${timeStamp} --- ${tokenName} --- Current Value in BNB: ${ethers.utils.formatUnits(currentValue)} --- Profit At: ${ethers.utils.formatUnits(profitDesired)} --- Stop Loss At: ${ethers.utils.formatUnits(stopLoss)} \r`));
-		console.log(`${timeStamp} --- ${tokenName} --- Current Value in BNB: ${ethers.utils.formatUnits(currentValue)} --- Profit At: ${ethers.utils.formatUnits(profitDesired)} --- Stop Loss At: ${ethers.utils.formatUnits(token.stopLoss)}`);
+		console.log(`${version} ${timeStamp} --- ${tokenName} --- Current Value in BNB: ${ethers.utils.formatUnits(currentValue)} --- Profit At: ${ethers.utils.formatUnits(profitDesired)} --- Stop Loss At: ${ethers.utils.formatUnits(token.stopLoss)}`);
 		if (currentValue.gte(profitDesired)) {
 			if (buyCount <= numberOfTokensToBuy && !token.didSell && token.didBuy && sellAttempts == 0) {
 				sellAttempts++;
@@ -141,7 +149,6 @@ async function checkForProfit(token) {
 		}
 	});
 }
-
 
 /**
  * 
@@ -225,7 +232,9 @@ async function sell(tokenObj, isProfit) {
                     initialTrailingStopLossPercent: trailingStopLossPercent,
                     trailingStopLossPercent: trailingStopLossPercent,
                     stopLoss: 0,
-                    intitialValue: 0
+                    intitialValue: 0,
+		    newValue: 0,
+		    currentValue: 0
                 });
                 buy();
             }
